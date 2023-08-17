@@ -1,6 +1,7 @@
 package com.service;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -12,12 +13,17 @@ import javax.transaction.Transactional;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import com.dao.EmployeeRepository;
 import com.dao.ProjectRepository;
 import com.dao.TicketRepository;
 import com.dto.ApiResponse;
+import com.dto.PagedResponseDTO;
 import com.dto.ProjectDTO;
 import com.dto.TicketDTO;
 import com.entity.EmployeeEntity;
@@ -26,6 +32,7 @@ import com.entity.TicketEntity;
 import com.exception.ResourceNotFoundException;
 import com.exception.UnAuthorizedException;
 import com.security.UserPrincipal;
+import com.utils.AppUtils;
 
 @Service
 @Transactional
@@ -89,35 +96,53 @@ public class TicketServiceImpl implements TicketService {
 	}
 
 	@Override
-	public List<TicketDTO> getAllTickets(int projectId) {
+	public PagedResponseDTO<TicketDTO> getAllTickets( Integer page, Integer size, int projectId) {
 		if (!projectRepository.existsById(projectId)) {
 	        throw new ResourceNotFoundException("Project", "ID", projectId);
 	    }
 		
-		List<TicketEntity> ticketEntities = ticketRepository.findByProjectProjectId(projectId);
+		AppUtils.validatePageNumberAndSize(page, size);
 		
-		return ticketEntities.stream().map(ticketEntity -> {
-				TicketDTO ticketDTO = convertTicketToDTO(ticketEntity);
-				ticketDTO.setProjectId(ticketEntity.getProject().getProjectId());
-				return ticketDTO;
-		}).collect(Collectors.toList());
+		Pageable pageable = PageRequest.of(page, size, Sort.Direction.ASC, "subject");
+		
+		
+		Page<TicketEntity> ticketEntities = ticketRepository.findByProjectProjectId(projectId, pageable);
+		
+		List<TicketDTO>  content = ticketEntities.getNumberOfElements() == 0 ? Collections.emptyList() : ticketEntities.getContent().stream().map(ticketEntity -> {
+			TicketDTO ticketDTO = convertTicketToDTO(ticketEntity);
+			ticketDTO.setProjectId(ticketEntity.getProject().getProjectId());
+			return ticketDTO;
+	}).collect(Collectors.toList());
+		
+		return new PagedResponseDTO<>( content, ticketEntities.getNumber(), ticketEntities.getSize(), ticketEntities.getTotalElements(),ticketEntities.getTotalPages(), ticketEntities.isLast() );
+
+		
 		
 	}
 	
 
 	@Override
-	public List<TicketDTO> getMyTickets(int projectId, UserPrincipal currentUser) {
+	public PagedResponseDTO<TicketDTO> getMyTickets(Integer page, Integer size, int projectId, UserPrincipal currentUser) {
 		if (!projectRepository.existsById(projectId)) {
 	        throw new ResourceNotFoundException("Project", "ID", projectId);
 	    }
 		
-		List<TicketEntity> ticketEntities = ticketRepository.findAllTicketsByEmployeeId(currentUser.getEmployeeId());
+AppUtils.validatePageNumberAndSize(page, size);
 		
-		return ticketEntities.stream().map(ticketEntity -> {
-				TicketDTO ticketDTO = convertTicketToDTO(ticketEntity);
-				ticketDTO.setProjectId(ticketEntity.getProject().getProjectId());
-				return ticketDTO;
-		}).collect(Collectors.toList());
+		Pageable pageable = PageRequest.of(page, size, Sort.Direction.ASC, "subject");
+		
+		
+		Page<TicketEntity> ticketEntities = ticketRepository.findAllTicketsByEmployeeIdAndProjectId(currentUser.getEmployeeId(),projectId, pageable);
+		
+		List<TicketDTO>  content = ticketEntities.getNumberOfElements() == 0 ? Collections.emptyList() : ticketEntities.getContent().stream().map(ticketEntity -> {
+			TicketDTO ticketDTO = convertTicketToDTO(ticketEntity);
+			ticketDTO.setProjectId(ticketEntity.getProject().getProjectId());
+			return ticketDTO;
+	}).collect(Collectors.toList());
+		
+		return new PagedResponseDTO<>( content, ticketEntities.getNumber(), ticketEntities.getSize(), ticketEntities.getTotalElements(),ticketEntities.getTotalPages(), ticketEntities.isLast() );
+
+
 		
 	}
 

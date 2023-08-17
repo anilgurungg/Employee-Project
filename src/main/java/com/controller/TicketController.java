@@ -13,13 +13,16 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.dto.ApiResponse;
+import com.dto.PagedResponseDTO;
 import com.dto.TicketDTO;
 import com.security.CurrentUser;
 import com.security.UserPrincipal;
 import com.service.TicketService;
+import com.utils.AppConstants;
 
 @RequestMapping("/api/v2/projects/{projectId}")
 @RestController
@@ -36,17 +39,23 @@ public class TicketController {
 		
 	   }
 	@PreAuthorize("hasRole('ADMIN')")
-	@GetMapping("/tickets")
-	public ResponseEntity<List<TicketDTO>> getAllTickets(@PathVariable(name = "projectId") int projectId) {
-		List<TicketDTO> listOfTickets = service.getAllTickets(projectId);
+	@GetMapping("/tickets/all")
+	public ResponseEntity<PagedResponseDTO<TicketDTO>> getAllTickets(
+			@RequestParam(value = "page", required = false, defaultValue = AppConstants.DEFAULT_PAGE_NUMBER) Integer page,
+			@RequestParam(value = "size", required = false, defaultValue = AppConstants.DEFAULT_PAGE_SIZE) Integer size,
+	@PathVariable(name = "projectId") int projectId) {
+		PagedResponseDTO<TicketDTO> listOfTickets = service.getAllTickets(page, size, projectId);
 		return new ResponseEntity<>(listOfTickets, HttpStatus.OK); 
 	 
 	}
 	
 	@PreAuthorize("hasRole('USER')")
-	@GetMapping("/tickets/me")
-	public ResponseEntity<List<TicketDTO>> getTicketById(@PathVariable(name = "projectId") int projectId, @CurrentUser UserPrincipal currentUser) {
-		List<TicketDTO> listOfTickets = service.getMyTickets(projectId, currentUser);
+	@GetMapping("/tickets")
+	public ResponseEntity<PagedResponseDTO<TicketDTO>> getMyTickets(
+					@RequestParam(value = "page", required = false, defaultValue = AppConstants.DEFAULT_PAGE_NUMBER) Integer page,
+					@RequestParam(value = "size", required = false, defaultValue = AppConstants.DEFAULT_PAGE_SIZE) Integer size
+			,@PathVariable(name = "projectId") int projectId, @CurrentUser UserPrincipal currentUser) {
+		PagedResponseDTO<TicketDTO> listOfTickets = service.getMyTickets(page, size,projectId, currentUser);
 		return new ResponseEntity<>(listOfTickets, HttpStatus.OK); 
 	 
 	}

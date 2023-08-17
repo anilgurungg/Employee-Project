@@ -1,10 +1,7 @@
 package com.service;
 
-import java.util.List;
-
 import com.dto.ApiResponse;
-import com.dto.EmployeeDTO;
-import com.dto.ResponseDTO;
+import com.dto.PagedResponseDTO;
 import com.dto.TicketDTO;
 import com.security.UserPrincipal;
 
@@ -12,7 +9,7 @@ public interface TicketService {
 
 //	void addTicket(TicketDTO ticketDTO,UserPrincipal currentUser );
 
-	List<TicketDTO> getAllTickets(int projectId);
+	PagedResponseDTO<TicketDTO> getAllTickets( Integer page, Integer size, int projectId);
 
 	TicketDTO getTicketById(int projectId,int ticketId, UserPrincipal currentUser);
 
@@ -22,7 +19,7 @@ public interface TicketService {
 
 	void addTicket(int projectId, TicketDTO ticketDTO, UserPrincipal currentUser);
 
-	List<TicketDTO> getMyTickets(int projectId, UserPrincipal currentUser);
+	PagedResponseDTO<TicketDTO> getMyTickets(Integer page, Integer size,int projectId, UserPrincipal currentUser);
 
 	
 

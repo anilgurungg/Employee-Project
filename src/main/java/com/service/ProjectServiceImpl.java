@@ -1,5 +1,6 @@
 package com.service;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -7,6 +8,10 @@ import javax.transaction.Transactional;
 
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.stereotype.Service;
@@ -14,6 +19,8 @@ import org.springframework.stereotype.Service;
 import com.dao.EmployeeRepository;
 import com.dao.ProjectRepository;
 import com.dto.ApiResponse;
+import com.dto.EmployeeDTO;
+import com.dto.PagedResponseDTO;
 import com.dto.ProjectDTO;
 import com.entity.EmployeeEntity;
 import com.entity.ProjectEntity;
@@ -22,6 +29,7 @@ import com.exception.EmployeeAPIException;
 import com.exception.ResourceNotFoundException;
 import com.exception.UnAuthorizedException;
 import com.security.UserPrincipal;
+import com.utils.AppUtils;
 
 
 @Service
@@ -60,21 +68,38 @@ public class ProjectServiceImpl implements ProjectService {
 	}
 
 	@Override
-	public List<ProjectDTO> getAllProjects() {
-		List<ProjectEntity> projectEntities = projectRepository.findAll();
+	public PagedResponseDTO<ProjectDTO> getAllProjects(Integer page, Integer size) {
 		
-		return projectEntities.stream()
+		AppUtils.validatePageNumberAndSize(page, size);
+		
+		Pageable pageable = PageRequest.of(page, size, Sort.Direction.ASC, "name");
+		
+		
+		Page<ProjectEntity> projectEntities = projectRepository.findAll(pageable);
+		
+		List<ProjectDTO>  content = projectEntities.getNumberOfElements() == 0 ? Collections.emptyList() : projectEntities.getContent().stream()
 				.map(  projectEntity -> convertToDTO(projectEntity))
 				.collect(Collectors.toList());
+		
+		return new PagedResponseDTO<ProjectDTO>( content, projectEntities.getNumber(), projectEntities.getSize(), projectEntities.getTotalElements(),projectEntities.getTotalPages(), projectEntities.isLast() );
+
+		
 	}
 	
 	@Override
-	public List<ProjectDTO> getMyProjects(UserPrincipal currentUser) {
-		List<ProjectEntity> projectEntities = projectRepository.findAllProjectsByEmployeeId(currentUser.getEmployeeId());
+	public PagedResponseDTO<ProjectDTO> getMyProjects(Integer page, Integer size,UserPrincipal currentUser) {
+AppUtils.validatePageNumberAndSize(page, size);
 		
-		return projectEntities.stream()
+		Pageable pageable = PageRequest.of(page, size, Sort.Direction.ASC, "name");
+		
+		
+		Page<ProjectEntity> projectEntities = projectRepository.findAllProjectsByEmployeeId(currentUser.getEmployeeId(), pageable);
+		
+		List<ProjectDTO>  content = projectEntities.getNumberOfElements() == 0 ? Collections.emptyList() : projectEntities.getContent().stream()
 				.map(  projectEntity -> convertToDTO(projectEntity))
 				.collect(Collectors.toList());
+		
+		return new PagedResponseDTO<ProjectDTO>( content, projectEntities.getNumber(), projectEntities.getSize(), projectEntities.getTotalElements(),projectEntities.getTotalPages(), projectEntities.isLast() );
 	}
 
 	@Override

@@ -13,12 +13,15 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.dto.ApiResponse;
 import com.dto.EmployeeDTO;
+import com.dto.PagedResponseDTO;
 import com.exception.BadRequestException;
 import com.service.EmployeeService;
+import com.utils.AppConstants;
 
 import javassist.expr.NewArray;
 
@@ -39,8 +42,18 @@ public class EmployeeController {
 	
 	
 	@GetMapping("/employees")
-	public ResponseEntity<List<EmployeeDTO>> getAllEmployees() {
-		List<EmployeeDTO> listOfEmployees = employeeService.getAllEmployees();
+	public ResponseEntity<PagedResponseDTO<EmployeeDTO>> getAllEmployees(@RequestParam(value = "page", required = false, defaultValue = AppConstants.DEFAULT_PAGE_NUMBER) Integer page,
+			@RequestParam(value = "size", required = false, defaultValue = AppConstants.DEFAULT_PAGE_SIZE) Integer size) {
+		PagedResponseDTO<EmployeeDTO> listOfEmployees = employeeService.getAllEmployees(page, size);
+		return new ResponseEntity<>(listOfEmployees, HttpStatus.OK); 
+	 
+	}
+	
+	@GetMapping("/employees/search")
+	public ResponseEntity<List<EmployeeDTO>> searchEmployees(
+			@RequestParam(required = false, name = "searchTerm") String searchTerm			
+			) {
+		List<EmployeeDTO> listOfEmployees = employeeService.searchEmployees(searchTerm);
 		return new ResponseEntity<>(listOfEmployees, HttpStatus.OK); 
 	 
 	}

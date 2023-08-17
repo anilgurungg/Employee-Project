@@ -1,6 +1,7 @@
 package com.service;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -11,6 +12,10 @@ import javax.transaction.Transactional;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -18,6 +23,7 @@ import com.dao.EmployeeRepository;
 import com.dao.RoleRepository;
 import com.dto.ApiResponse;
 import com.dto.EmployeeDTO;
+import com.dto.PagedResponseDTO;
 import com.dto.ProjectDTO;
 import com.dto.TicketDTO;
 import com.entity.EmployeeEntity;
@@ -27,6 +33,7 @@ import com.entity.RoleName;
 import com.entity.TicketEntity;
 import com.exception.AppException;
 import com.exception.ResourceNotFoundException;
+import com.utils.AppUtils;
 
 @Service
 @Transactional
@@ -82,8 +89,33 @@ public class EmployeeServiceImpl implements EmployeeService {
 	}
 
 	@Override
-	public List<EmployeeDTO> getAllEmployees() {
-		List<EmployeeEntity> employeeEntities = employeeRepository.findAll();
+	public PagedResponseDTO<EmployeeDTO> getAllEmployees(Integer page, Integer size) {
+		
+		AppUtils.validatePageNumberAndSize(page, size);
+		
+		Pageable pageable = PageRequest.of(page, size, Sort.Direction.DESC, "emailId");
+		
+		Page<EmployeeEntity> employeeEntities = employeeRepository.findAll(pageable);
+		
+		List<EmployeeDTO>  content = employeeEntities.getNumberOfElements() == 0 ? Collections.emptyList() : employeeEntities.getContent().stream()
+				.map( employeeEntity -> { 
+					EmployeeDTO employeeDTO = convertEmployeeToDTO(employeeEntity);
+					Set<TicketDTO> ticketDTOs = employeeEntity.getTickets().stream()
+							.map(ticketEntity -> convertTicketToDTO(ticketEntity))
+							.collect(Collectors.toSet());
+					employeeDTO.setTickets(ticketDTOs);
+					return employeeDTO;
+				})
+				.collect(Collectors.toList());
+		
+		return new PagedResponseDTO<EmployeeDTO>( content, employeeEntities.getNumber(), employeeEntities.getSize(), employeeEntities.getTotalElements(),employeeEntities.getTotalPages(), employeeEntities.isLast() );
+
+	}
+	
+
+	@Override
+	public List<EmployeeDTO> searchEmployees(String searchTerm) {
+List<EmployeeEntity> employeeEntities = employeeRepository.searchEmployees(searchTerm);
 		
 		return employeeEntities.stream()
 			.map( employeeEntity -> { 
@@ -95,8 +127,8 @@ public class EmployeeServiceImpl implements EmployeeService {
 				return employeeDTO;
 			})
 			.collect(Collectors.toList());
-
 	}
+
 
 	@Override
 	public EmployeeDTO getEmployeeById(int employeeId) {

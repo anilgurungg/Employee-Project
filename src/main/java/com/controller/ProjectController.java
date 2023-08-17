@@ -13,13 +13,16 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.dto.ApiResponse;
+import com.dto.PagedResponseDTO;
 import com.dto.ProjectDTO;
 import com.security.CurrentUser;
 import com.security.UserPrincipal;
 import com.service.ProjectService;
+import com.utils.AppConstants;
 
 @RequestMapping("/api/v2")
 @RestController
@@ -39,16 +42,21 @@ public class ProjectController {
 	
 	@PreAuthorize("hasRole('ADMIN')")
 	@GetMapping("/projects")
-	public ResponseEntity<List<ProjectDTO>> getAllProjects() {
-		List<ProjectDTO> listOfProjects = service.getAllProjects();
+	public ResponseEntity<PagedResponseDTO<ProjectDTO>> getAllProjects(
+			@RequestParam(value = "page", required = false, defaultValue = AppConstants.DEFAULT_PAGE_NUMBER) Integer page,
+			@RequestParam(value = "size", required = false, defaultValue = AppConstants.DEFAULT_PAGE_SIZE) Integer size) {
+		PagedResponseDTO<ProjectDTO> listOfProjects = service.getAllProjects(page,size);
 		return new ResponseEntity<>(listOfProjects, HttpStatus.OK);
 
 	}
 	
 	@PreAuthorize("hasRole('USER')")
 	@GetMapping("/projects/me")
-	public ResponseEntity<List<ProjectDTO>> getProjectByEmployee(@CurrentUser UserPrincipal currentUser) {
-		List<ProjectDTO> listOfProjects = service.getMyProjects(currentUser);
+	public ResponseEntity<PagedResponseDTO<ProjectDTO>> getMyProjects(
+			@RequestParam(value = "page", required = false, defaultValue = AppConstants.DEFAULT_PAGE_NUMBER) Integer page,
+			@RequestParam(value = "size", required = false, defaultValue = AppConstants.DEFAULT_PAGE_SIZE) Integer size,
+			@CurrentUser UserPrincipal currentUser) {
+		PagedResponseDTO<ProjectDTO> listOfProjects = service.getMyProjects(page,size,currentUser);
 		return new ResponseEntity<>(listOfProjects, HttpStatus.OK);
 	}
 	

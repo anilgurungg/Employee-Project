@@ -1,8 +1,7 @@
 package com.service;
 
-import java.util.List;
-
 import com.dto.ApiResponse;
+import com.dto.PagedResponseDTO;
 import com.dto.ProjectDTO;
 import com.security.UserPrincipal;
 
@@ -10,7 +9,7 @@ public interface ProjectService {
 
 	void addProject(ProjectDTO projectDTO, UserPrincipal currentUser);
 
-	List<ProjectDTO> getAllProjects();
+	PagedResponseDTO<ProjectDTO> getAllProjects(Integer page, Integer size);
 
 	ProjectDTO getProjectById(int projectId, UserPrincipal currentUser);
 
@@ -20,6 +19,6 @@ public interface ProjectService {
 
 	void removeAsigneeFromProject(int projectId, int employeeId);
 
-	List<ProjectDTO> getMyProjects(UserPrincipal currentUser);
+	PagedResponseDTO<ProjectDTO> getMyProjects(Integer page, Integer size, UserPrincipal currentUser);
 
 }
