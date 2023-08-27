@@ -10,7 +10,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.entity.ProjectEntity;
-@Repository
+//@Repository
 public interface ProjectRepository extends JpaRepository<ProjectEntity, Integer> {
 	
 	@Query("SELECT DISTINCT p FROM ProjectEntity p JOIN p.employees e WHERE e.employeeId = :employeeId")

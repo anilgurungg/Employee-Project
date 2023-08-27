@@ -1,6 +1,6 @@
 package com.controller;
 
-import java.util.List;
+import javax.validation.Valid;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -29,61 +29,85 @@ import com.utils.AppConstants;
 public class TicketController {
 	@Autowired
 	TicketService service;
-	 
+
 	@PreAuthorize("hasRole('USER')")
 	@PostMapping("/tickets")
-	   public ResponseEntity<String> addTicket(@PathVariable(name = "projectId") int projectId, @RequestBody TicketDTO ticketDTO, @CurrentUser UserPrincipal currentUser) {
-		service.addTicket(projectId,ticketDTO,currentUser);
-		   
-		   return new ResponseEntity<>("Ticket added successfully", HttpStatus.CREATED);  
-		
-	   }
+	public ResponseEntity<String> addTicket(@PathVariable(name = "projectId") int projectId,
+			@Valid 	@RequestBody TicketDTO ticketDTO, @CurrentUser UserPrincipal currentUser) {
+		service.addTicket(projectId, ticketDTO, currentUser);
+
+		return new ResponseEntity<>("Ticket added successfully", HttpStatus.CREATED);
+
+	}
+
 	@PreAuthorize("hasRole('ADMIN')")
 	@GetMapping("/tickets/all")
 	public ResponseEntity<PagedResponseDTO<TicketDTO>> getAllTickets(
 			@RequestParam(value = "page", required = false, defaultValue = AppConstants.DEFAULT_PAGE_NUMBER) Integer page,
 			@RequestParam(value = "size", required = false, defaultValue = AppConstants.DEFAULT_PAGE_SIZE) Integer size,
-	@PathVariable(name = "projectId") int projectId) {
+			@PathVariable(name = "projectId") int projectId) {
 		PagedResponseDTO<TicketDTO> listOfTickets = service.getAllTickets(page, size, projectId);
-		return new ResponseEntity<>(listOfTickets, HttpStatus.OK); 
-	 
+		return new ResponseEntity<>(listOfTickets, HttpStatus.OK);
+
 	}
-	
+
 	@PreAuthorize("hasRole('USER')")
 	@GetMapping("/tickets")
 	public ResponseEntity<PagedResponseDTO<TicketDTO>> getMyTickets(
-					@RequestParam(value = "page", required = false, defaultValue = AppConstants.DEFAULT_PAGE_NUMBER) Integer page,
-					@RequestParam(value = "size", required = false, defaultValue = AppConstants.DEFAULT_PAGE_SIZE) Integer size
-			,@PathVariable(name = "projectId") int projectId, @CurrentUser UserPrincipal currentUser) {
-		PagedResponseDTO<TicketDTO> listOfTickets = service.getMyTickets(page, size,projectId, currentUser);
-		return new ResponseEntity<>(listOfTickets, HttpStatus.OK); 
-	 
+			@RequestParam(value = "page", required = false, defaultValue = AppConstants.DEFAULT_PAGE_NUMBER) Integer page,
+			@RequestParam(value = "size", required = false, defaultValue = AppConstants.DEFAULT_PAGE_SIZE) Integer size,
+			@PathVariable(name = "projectId") int projectId, @CurrentUser UserPrincipal currentUser) {
+		PagedResponseDTO<TicketDTO> listOfTickets = service.getMyTickets(page, size, projectId, currentUser);
+		return new ResponseEntity<>(listOfTickets, HttpStatus.OK);
+
 	}
-	
+
 	@GetMapping("/tickets/{ticketId}")
-	public ResponseEntity<TicketDTO> getTicketById(@PathVariable(name = "projectId") int projectId,@PathVariable(name = "ticketId") int ticketId, @CurrentUser UserPrincipal currentUser) {
+	public ResponseEntity<TicketDTO> getTicketById(@PathVariable(name = "projectId") int projectId,
+			@PathVariable(name = "ticketId") int ticketId, @CurrentUser UserPrincipal currentUser) {
 		TicketDTO ticketDTO = service.getTicketById(projectId, ticketId, currentUser);
-		return new ResponseEntity<>(ticketDTO, HttpStatus.OK); 
-	 
+		return new ResponseEntity<>(ticketDTO, HttpStatus.OK);
+
 	}
-	
-	
+
 	@PreAuthorize("hasRole('USER')")
 	@DeleteMapping("/tickets/{ticketId}")
-	public ResponseEntity<ApiResponse> deleteTicketById(@PathVariable(name = "projectId") int projectId,@PathVariable(name = "ticketId") int ticketId, @CurrentUser UserPrincipal currentUser) {
-		ApiResponse  apiResponse  = service.deleteTicketById(projectId, ticketId, currentUser);
-		return new ResponseEntity<>(apiResponse, HttpStatus.OK); 
-	 
+	public ResponseEntity<ApiResponse> deleteTicketById(@PathVariable(name = "projectId") int projectId,
+			@PathVariable(name = "ticketId") int ticketId, @CurrentUser UserPrincipal currentUser) {
+		ApiResponse apiResponse = service.deleteTicketById(projectId, ticketId, currentUser);
+		return new ResponseEntity<>(apiResponse, HttpStatus.OK);
+
 	}
 
 	@PreAuthorize("hasRole('USER')")
 	@PutMapping("/tickets/{ticketId}")
-	   public ResponseEntity<ApiResponse> updateTicketById(@PathVariable(name = "projectId") int projectId,@PathVariable(name = "ticketId") int ticketId, @RequestBody TicketDTO ticketDTO ,    @CurrentUser UserPrincipal currentUser) {
-		   
-		 
-			   ApiResponse  apiResponse =    service.updateTicketById(projectId, ticketId,ticketDTO,currentUser ); 
-			   return new ResponseEntity<>(apiResponse, HttpStatus.OK); 
-	 
-		 
-	   }
+	public ResponseEntity<ApiResponse> updateTicketById(@PathVariable(name = "projectId") int projectId,
+			@PathVariable(name = "ticketId") int ticketId,@Valid  @RequestBody TicketDTO ticketDTO,
+			@CurrentUser UserPrincipal currentUser) {
+
+		ApiResponse apiResponse = service.updateTicketById(projectId, ticketId, ticketDTO, currentUser);
+		return new ResponseEntity<>(apiResponse, HttpStatus.OK);
+
+	}
+
+	@PreAuthorize("hasRole('USER')")
+	@PutMapping("/tickets/{ticketId}/addAsignee/{employeeId}")
+	public ResponseEntity<TicketDTO> add(@PathVariable int projectId, @PathVariable int employeeId,
+			@PathVariable int ticketId) {
+		System.out.println("here");
+		TicketDTO updadeTicketDTO = service.addAsigneeToTicket(projectId, employeeId, ticketId);
+
+		return new ResponseEntity<>(updadeTicketDTO, HttpStatus.OK);
+
+	}
+
+	@PreAuthorize("hasRole('USER')")
+	@PutMapping("/tickets/{ticketId}/removeAsignee/{employeeId}")
+	public ResponseEntity<TicketDTO> removeAsigneeFromTicket(@PathVariable int projectId, @PathVariable int employeeId,
+			@PathVariable int ticketId) {
+		TicketDTO updadeTicketDTO = service.removeAsigneeFromTicket(projectId, employeeId, ticketId);
+
+		return new ResponseEntity<>(updadeTicketDTO, HttpStatus.OK);
+
+	}
 }

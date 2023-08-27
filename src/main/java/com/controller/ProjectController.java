@@ -2,6 +2,8 @@ package com.controller;
 
 import java.util.List;
 
+import javax.validation.Valid;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -32,34 +34,34 @@ public class ProjectController {
 
 	@PreAuthorize("hasRole('ADMIN')")
 	@PostMapping("/projects")
-	public ResponseEntity<String> addProject(@RequestBody ProjectDTO projectDTO,
+	public ResponseEntity<String> addProject(@Valid @RequestBody ProjectDTO projectDTO,
 			@CurrentUser UserPrincipal currentUser) {
 		service.addProject(projectDTO, currentUser);
 
 		return new ResponseEntity<>("Project added successfully", HttpStatus.CREATED);
 
 	}
-	
+
 	@PreAuthorize("hasRole('ADMIN')")
 	@GetMapping("/projects")
 	public ResponseEntity<PagedResponseDTO<ProjectDTO>> getAllProjects(
 			@RequestParam(value = "page", required = false, defaultValue = AppConstants.DEFAULT_PAGE_NUMBER) Integer page,
 			@RequestParam(value = "size", required = false, defaultValue = AppConstants.DEFAULT_PAGE_SIZE) Integer size) {
-		PagedResponseDTO<ProjectDTO> listOfProjects = service.getAllProjects(page,size);
+		PagedResponseDTO<ProjectDTO> listOfProjects = service.getAllProjects(page, size);
 		return new ResponseEntity<>(listOfProjects, HttpStatus.OK);
 
 	}
-	
+
 	@PreAuthorize("hasRole('USER')")
 	@GetMapping("/projects/me")
 	public ResponseEntity<PagedResponseDTO<ProjectDTO>> getMyProjects(
 			@RequestParam(value = "page", required = false, defaultValue = AppConstants.DEFAULT_PAGE_NUMBER) Integer page,
 			@RequestParam(value = "size", required = false, defaultValue = AppConstants.DEFAULT_PAGE_SIZE) Integer size,
 			@CurrentUser UserPrincipal currentUser) {
-		PagedResponseDTO<ProjectDTO> listOfProjects = service.getMyProjects(page,size,currentUser);
+		PagedResponseDTO<ProjectDTO> listOfProjects = service.getMyProjects(page, size, currentUser);
 		return new ResponseEntity<>(listOfProjects, HttpStatus.OK);
 	}
-	
+
 	@PreAuthorize("hasRole('USER')")
 	@GetMapping("/projects/{projectId}")
 	public ResponseEntity<ProjectDTO> getProjectById(@PathVariable(name = "projectId") int projectId,
@@ -77,23 +79,33 @@ public class ProjectController {
 		return new ResponseEntity<>(apiResponse, HttpStatus.OK);
 
 	}
-
+	
 	@PreAuthorize("hasRole('ADMIN')")
-	@PutMapping("/projects/{projectId}/addAsignee/{employeeId}")
-	public ResponseEntity<String> add(@PathVariable int projectId, @PathVariable int employeeId) {
-		service.addAsigneeToProject(projectId, employeeId);
+	@PutMapping("/projects/{projectId}")
+	public ResponseEntity<ApiResponse> editProjectById(@PathVariable int projectId, @Valid @RequestBody ProjectDTO projectDTO,
+			@CurrentUser UserPrincipal currentUser) {
+		ApiResponse apiResponse = service.editProjectById(projectId,projectDTO, currentUser);
 
-		return new ResponseEntity<>("Employeed added to project successfully", HttpStatus.OK);
+		return new ResponseEntity<>(apiResponse, HttpStatus.OK);
 
 	}
 
+	@PreAuthorize("hasRole('ADMIN')")
+	@PutMapping("/projects/{projectId}/addAsignee/{employeeId}")
+	public ResponseEntity<ProjectDTO> add(@PathVariable int projectId, @PathVariable int employeeId) {
+		ProjectDTO updadeProjectDTO = service.addAsigneeToProject(projectId, employeeId);
+
+		return new ResponseEntity<>(updadeProjectDTO, HttpStatus.OK);
+
+	}
 
 	@PreAuthorize("hasRole('ADMIN')")
 	@PutMapping("/projects/{projectId}/removeAsignee/{employeeId}")
-	public ResponseEntity<String> removeAsigneeFromProject(@PathVariable int projectId, @PathVariable int employeeId) {
-		service.removeAsigneeFromProject(projectId, employeeId);
+	public ResponseEntity<ProjectDTO> removeAsigneeFromProject(@PathVariable int projectId,
+			@PathVariable int employeeId) {
+		ProjectDTO updadeProjectDTO = service.removeAsigneeFromProject(projectId, employeeId);
 
-		return new ResponseEntity<>("Employeed removed from project successfully", HttpStatus.OK);
+		return new ResponseEntity<>(updadeProjectDTO, HttpStatus.OK);
 
 	}
 

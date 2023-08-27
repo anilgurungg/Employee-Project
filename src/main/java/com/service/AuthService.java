@@ -13,6 +13,6 @@ public interface AuthService {
 
 	ResponseEntity<ApiResponse> registerEmployee(@Valid SignUpDTO signUpRequest);
 
-	ResponseEntity<JwtAuthenticationResponseDTO> loginEmployee(@Valid LoginDTO signUpRequest);
+	ResponseEntity<?> loginEmployee(@Valid LoginDTO signUpRequest);
 
 }

@@ -12,7 +12,7 @@ import org.springframework.stereotype.Repository;
 
 import com.entity.EmployeeEntity;
 
-@Repository
+//@Repository
 public interface EmployeeRepository  extends JpaRepository<EmployeeEntity, Integer> {
 
 	Optional<EmployeeEntity> findByEmailId(@NotBlank String emailId);

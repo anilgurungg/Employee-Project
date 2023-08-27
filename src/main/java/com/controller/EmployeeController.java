@@ -2,6 +2,8 @@ package com.controller;
 
 import java.util.List;
 
+import javax.validation.Valid;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -20,6 +22,8 @@ import com.dto.ApiResponse;
 import com.dto.EmployeeDTO;
 import com.dto.PagedResponseDTO;
 import com.exception.BadRequestException;
+import com.security.CurrentUser;
+import com.security.UserPrincipal;
 import com.service.EmployeeService;
 import com.utils.AppConstants;
 
@@ -35,7 +39,7 @@ public class EmployeeController {
 	
 	@PreAuthorize("hasRole('ADMIN')")
 	@PostMapping("/employees")
-	public ResponseEntity<EmployeeDTO> addEmployee(@RequestBody EmployeeDTO employeeDTO ) {
+	public ResponseEntity<EmployeeDTO> addEmployee(@Valid @RequestBody EmployeeDTO employeeDTO ) {
 		EmployeeDTO savedEmployeeDTO = employeeService.registerEmp(employeeDTO);
 		return new ResponseEntity<>( savedEmployeeDTO , HttpStatus.CREATED);
 	}
@@ -58,6 +62,15 @@ public class EmployeeController {
 	 
 	}
 	
+	@GetMapping("/employees/me")
+	public ResponseEntity<EmployeeDTO> getMyEmployeeProfile( @CurrentUser UserPrincipal currentUser) {
+		EmployeeDTO employeeDTO = employeeService.getEmployeeById(currentUser.getEmployeeId());
+	 
+			return new ResponseEntity<>(employeeDTO, HttpStatus.OK); 
+		 
+		
+	}
+	
 	@GetMapping("/employees/{employeeId}")
 	public ResponseEntity<EmployeeDTO> getEmployeeById( @PathVariable  int employeeId) {
 		EmployeeDTO employeeDTO = employeeService.getEmployeeById(employeeId);
@@ -69,13 +82,13 @@ public class EmployeeController {
 	
 	@PreAuthorize("hasRole('ADMIN') or hasRole('USER')")
 	@DeleteMapping("/employees/{employeeId}")
-	public ResponseEntity<ApiResponse> deleteEmployeeById(@PathVariable  int employeeId) {
+	public ResponseEntity<ApiResponse> deleteEmployeeById(@PathVariable  int employeeId, @CurrentUser UserPrincipal currentUser) {
 		
 		 if ( employeeId <0 ) {
 			 throw new BadRequestException(" Employee Id cannot be negative");
 		 }
 		 
-		ApiResponse  apiResponse = employeeService.deleteEmployeeById(employeeId);
+		ApiResponse  apiResponse = employeeService.deleteEmployeeById(employeeId, currentUser );
 	    return new ResponseEntity<>(apiResponse, HttpStatus.OK); 
 		 
 		 
@@ -84,11 +97,11 @@ public class EmployeeController {
 	
 	@PreAuthorize("hasRole('ADMIN') or hasRole('USER')")
 	@PutMapping("/employees/{employeeId}")
-	   public ResponseEntity<ApiResponse> updateEmployeeById(@RequestBody EmployeeDTO employeeDTO,@PathVariable int employeeId ) {
+	   public ResponseEntity<EmployeeDTO> updateEmployeeById(@RequestBody EmployeeDTO employeeDTO,@PathVariable int employeeId , @CurrentUser UserPrincipal currentUser ) {
 		   
 		 
-			   ApiResponse  apiResponse =    employeeService.updateEmployeeById(employeeDTO,employeeId ); 
-			   return new ResponseEntity<>(apiResponse, HttpStatus.OK); 
+		EmployeeDTO  newEmployeeDTO =    employeeService.updateEmployeeById(employeeDTO,employeeId, currentUser ); 
+			   return new ResponseEntity<>(newEmployeeDTO, HttpStatus.OK); 
 	 
 		 
 	   }

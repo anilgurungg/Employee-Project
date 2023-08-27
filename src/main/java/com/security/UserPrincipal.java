@@ -1,6 +1,5 @@
 package com.security;
 
-import java.security.Permission;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -42,7 +41,7 @@ public class UserPrincipal implements UserDetails {
 	public static UserPrincipal create(EmployeeEntity user) {
 		List<GrantedAuthority> authorities = user.getRoles().stream()
 				.map(role -> new SimpleGrantedAuthority(role.getName().name())).collect(Collectors.toList());
-		user.getPermissions().forEach(permission -> authorities.add(new SimpleGrantedAuthority(permission)) );
+//		user.getPermissions().forEach(permission -> authorities.add(new SimpleGrantedAuthority(permission)) );
 		
 		return new UserPrincipal(user.getEmployeeId(),user.getEmployeeName(), user.getEmailId(), user.getPassword(), authorities);
 	}

@@ -1,8 +1,10 @@
 package com.dto;
 
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
+
+import javax.validation.constraints.Email;
+import javax.validation.constraints.NotBlank;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -11,11 +13,16 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class EmployeeDTO {
 	private int employeeId;
+	@NotBlank
 	private String employeeName;
+	@NotBlank
+	@Email
 	private String emailId;
+	@NotBlank
 	private String password;
 	private int salary;
 	private Set<TicketDTO> tickets = new HashSet<>();
+	 private Set<RoleDTO> roles = new HashSet<>(); 
 	
 	
 	public EmployeeDTO(int employeeId, String employeeName, String emailId, String password, int salary,

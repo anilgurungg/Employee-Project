@@ -1,6 +1,6 @@
 package com.dto;
- 
- 
+
+import java.util.List;
 
 public class ApiResponse {
 	 
@@ -8,6 +8,7 @@ public class ApiResponse {
 	 
 	private String message;
 	 
+	private List<String> errorStrings;
 	 
 
 	public ApiResponse() {
@@ -22,9 +23,28 @@ public class ApiResponse {
 		this.success = success;
 		this.message = message;
 	}
+	
+	public ApiResponse(Boolean success, String message, List<String> errorStrings) {
+		super();
+		this.success = success;
+		this.message = message;
+		this.errorStrings = errorStrings;
+	}
 
-
+	
  
+
+	public List<String> getErrorStrings() {
+		return errorStrings;
+	}
+
+
+
+	public void setErrorStrings(List<String> errorStrings) {
+		this.errorStrings = errorStrings;
+	}
+
+
 
 	public Boolean getSuccess() {
 		return success;

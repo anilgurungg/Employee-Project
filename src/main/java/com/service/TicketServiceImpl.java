@@ -17,18 +17,21 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import com.dao.EmployeeRepository;
 import com.dao.ProjectRepository;
 import com.dao.TicketRepository;
 import com.dto.ApiResponse;
+import com.dto.EmployeeDTO;
 import com.dto.PagedResponseDTO;
 import com.dto.ProjectDTO;
 import com.dto.TicketDTO;
 import com.entity.EmployeeEntity;
 import com.entity.ProjectEntity;
 import com.entity.TicketEntity;
+import com.exception.EmployeeAPIException;
 import com.exception.ResourceNotFoundException;
 import com.exception.UnAuthorizedException;
 import com.security.UserPrincipal;
@@ -200,6 +203,61 @@ AppUtils.validatePageNumberAndSize(page, size);
 		}
 		ApiResponse apiResponse = new ApiResponse(Boolean.FALSE, "You are not authorized to update this ticket");
 		throw new UnAuthorizedException(apiResponse);
+	}
+
+	@Override
+	public TicketDTO addAsigneeToTicket(int projectId, int employeeId, int ticketId) {
+		ProjectEntity projectEntity = projectRepository.findById(projectId)
+				.orElseThrow(() -> new ResourceNotFoundException("Project", "ID", projectId));
+		TicketEntity ticketEntity = ticketRepository.findById(ticketId)
+				.orElseThrow(() -> new ResourceNotFoundException("TICKET", "ID", ticketId));
+		EmployeeEntity employeeEntity = employeeRepository.findById(employeeId)
+				.orElseThrow(() -> new ResourceNotFoundException("Employee", "Id", employeeId));
+		
+		if ( ticketEntity.getAssignedEmployees().contains(employeeEntity)) {
+			throw new EmployeeAPIException(HttpStatus.CONFLICT, "Employee is already in the project");
+		} 
+			
+
+		ticketEntity.getAssignedEmployees().add(employeeEntity);
+		System.out.println(ticketEntity.getAssignedEmployees().contains(employeeId));
+		employeeEntity.getTickets().add(ticketEntity);
+		
+		employeeRepository.save(employeeEntity);
+		
+		TicketEntity  updatedTicketEntity =  ticketRepository.save(ticketEntity);
+		TicketDTO ticketDTO = convertTicketToDTO(updatedTicketEntity);
+		ticketDTO.setAssignedEmployeeIds(updatedTicketEntity.getAssignedEmployeeIds());		
+			
+			return ticketDTO;
+
+	}
+
+	@Override
+	public TicketDTO removeAsigneeFromTicket(int projectId, int employeeId, int ticketId) {
+		ProjectEntity projectEntity = projectRepository.findById(projectId)
+				.orElseThrow(() -> new ResourceNotFoundException("Project", "ID", projectId));
+		TicketEntity ticketEntity = ticketRepository.findById(ticketId)
+				.orElseThrow(() -> new ResourceNotFoundException("TICKET", "ID", ticketId));
+		EmployeeEntity employeeEntity = employeeRepository.findById(employeeId)
+				.orElseThrow(() -> new ResourceNotFoundException("Employee", "Id", employeeId));
+		
+		if ( !ticketEntity.getAssignedEmployees().contains(employeeEntity)) {
+			throw new EmployeeAPIException(HttpStatus.CONFLICT, "Employee is not in the project");
+		} 
+			
+
+		ticketEntity.getAssignedEmployees().remove(employeeEntity);
+		System.out.println(ticketEntity.getAssignedEmployees().contains(employeeId));
+		employeeEntity.getTickets().remove(ticketEntity);
+		
+		employeeRepository.save(employeeEntity);
+		
+		TicketEntity  updatedTicketEntity =  ticketRepository.save(ticketEntity);
+		TicketDTO ticketDTO = convertTicketToDTO(updatedTicketEntity);
+		ticketDTO.setAssignedEmployeeIds(updatedTicketEntity.getAssignedEmployeeIds());		
+			
+			return ticketDTO;
 	}
 	
 

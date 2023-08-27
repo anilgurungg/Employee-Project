@@ -2,6 +2,7 @@ package com.service;
 
 import com.dto.ApiResponse;
 import com.dto.PagedResponseDTO;
+import com.dto.ProjectDTO;
 import com.dto.TicketDTO;
 import com.security.UserPrincipal;
 
@@ -20,6 +21,10 @@ public interface TicketService {
 	void addTicket(int projectId, TicketDTO ticketDTO, UserPrincipal currentUser);
 
 	PagedResponseDTO<TicketDTO> getMyTickets(Integer page, Integer size,int projectId, UserPrincipal currentUser);
+
+	TicketDTO addAsigneeToTicket(int projectId, int employeeId,  int ticketId);
+
+	TicketDTO removeAsigneeFromTicket(int projectId, int employeeId, int ticketId);
 
 	
 

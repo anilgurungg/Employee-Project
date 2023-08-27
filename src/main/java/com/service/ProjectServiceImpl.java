@@ -5,8 +5,10 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import javax.transaction.Transactional;
+import javax.validation.Valid;
 
 import org.modelmapper.ModelMapper;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -25,6 +27,7 @@ import com.dto.ProjectDTO;
 import com.entity.EmployeeEntity;
 import com.entity.ProjectEntity;
 import com.entity.RoleName;
+import com.entity.TicketEntity;
 import com.exception.EmployeeAPIException;
 import com.exception.ResourceNotFoundException;
 import com.exception.UnAuthorizedException;
@@ -53,17 +56,30 @@ public class ProjectServiceImpl implements ProjectService {
 		return modelMapper.map(projectEntity, ProjectDTO.class);
 	}
 
+	public EmployeeDTO convertEmployeeToDTO( EmployeeEntity employeeEntity ) {
+		return modelMapper.map(employeeEntity, EmployeeDTO.class);
+	}
+	
 	@Override
 	public void addProject(ProjectDTO projectDTO, UserPrincipal currentUser) {
 		
 		EmployeeEntity employeeEntity = employeeRepository.findById(currentUser.getEmployeeId())
 				.orElseThrow(() -> new ResourceNotFoundException("EMPLOYEE", "ID", currentUser.getEmployeeId()));
-       
-		ProjectEntity projectEntity = convertToEntity(projectDTO);
-		System.out.println(projectDTO);
-		projectEntity.getEmployees().add(employeeEntity);
-		System.out.println(projectEntity);
-		projectRepository.save(projectEntity);
+ 
+       ProjectEntity projectEntity = convertToEntity(projectDTO);
+       try {
+    	   System.out.println(projectEntity);
+   		projectEntity.getAssignedEmployees().add(employeeEntity);
+   		employeeEntity.getProjectEntities().add(projectEntity);
+   		System.out.println(projectEntity);
+   		employeeRepository.saveAndFlush(employeeEntity);
+		projectRepository.saveAndFlush(projectEntity);
+	} catch (Exception e) {
+		System.out.println(e.getMessage());
+	}
+		
+		
+		
 
 	}
 
@@ -104,16 +120,23 @@ AppUtils.validatePageNumberAndSize(page, size);
 
 	@Override
 	public ProjectDTO getProjectById(int projectId, UserPrincipal currentUser) {
-
+		
+		ProjectEntity projectEntity = projectRepository.findById(projectId)
+				.orElseThrow(() -> new ResourceNotFoundException("Project", "ID", projectId));
+		System.out.println( currentUser);
+		
+		
 		if (!isEmployeeAssignedToProject(currentUser.getEmployeeId(), projectId) && !currentUser.getAuthorities().contains( new SimpleGrantedAuthority(RoleName.ROLE_ADMIN.toString())) ) {
 			throw new UnAuthorizedException(
 					new ApiResponse(Boolean.FALSE, "You are not authorized to view this project"));
 		}
-
-		ProjectEntity projectEntity = projectRepository.findById(projectId)
-				.orElseThrow(() -> new ResourceNotFoundException("Project", "ID", projectId));
 		
-		return convertToDTO(projectEntity);
+		ProjectDTO projectDTO = convertToDTO(projectEntity);
+		System.out.println( projectDTO);
+		projectDTO.setAssignedEmployeeIds(projectEntity.getEmployeeIds());
+
+		System.out.println(projectDTO);
+		return projectDTO;
 	}
 
 	@Override
@@ -127,7 +150,7 @@ AppUtils.validatePageNumberAndSize(page, size);
 	}
 
 	@Override
-	public void addAsigneeToProject(int projectId, int employeeId) {
+	public ProjectDTO addAsigneeToProject(int projectId, int employeeId) {
 		ProjectEntity projectEntity = projectRepository.findById(projectId)
 				.orElseThrow(() -> new ResourceNotFoundException("Project", "ID", projectId));
 		EmployeeEntity employeeEntity = employeeRepository.findById(employeeId)
@@ -135,16 +158,21 @@ AppUtils.validatePageNumberAndSize(page, size);
 
 		if (projectEntity.getEmployeeIds().contains(employeeId)) {
 			throw new EmployeeAPIException(HttpStatus.CONFLICT, "Employee is already in the project");
-		} else {
+		} 
+		
 			projectEntity.getEmployees().add(employeeEntity);
 			employeeEntity.getProjectEntities().add(projectEntity);
-			projectRepository.save(projectEntity);
-		}
+			ProjectEntity  updatedProjectEntity =  projectRepository.save(projectEntity);
+			ProjectDTO projectDTO = convertToDTO(updatedProjectEntity);
+			projectDTO.setAssignedEmployeeIds(projectEntity.getEmployeeIds());
+
+			
+			return projectDTO;
 
 	}
 
 	@Override
-	public void removeAsigneeFromProject(int projectId, int employeeId) {
+	public ProjectDTO removeAsigneeFromProject(int projectId, int employeeId) {
 		ProjectEntity projectEntity = projectRepository.findById(projectId)
 				.orElseThrow(() -> new ResourceNotFoundException("Project", "ID", projectId));
 		EmployeeEntity employeeEntity = employeeRepository.findById(employeeId)
@@ -152,11 +180,17 @@ AppUtils.validatePageNumberAndSize(page, size);
 
 		if (!projectEntity.getEmployeeIds().contains(employeeId)) {
 			throw new EmployeeAPIException(HttpStatus.CONFLICT, "Employee is not in the project");
-		} else {
-			projectEntity.getEmployees().remove(employeeEntity);
-			employeeEntity.getProjectEntities().remove(projectEntity);
-			projectRepository.save(projectEntity);
-		}
+		} 
+		projectEntity.getEmployees().remove(employeeEntity);
+		employeeEntity.getProjectEntities().remove(projectEntity);
+		ProjectEntity  updatedProjectEntity =  projectRepository.save(projectEntity);
+		ProjectDTO projectDTO = convertToDTO(updatedProjectEntity);
+		projectDTO.setAssignedEmployeeIds(projectEntity.getEmployeeIds());
+
+
+
+		
+		return projectDTO;
 	}
 
 	public boolean isEmployeeAssignedToProject(int employeeId, int projectId) {
@@ -170,6 +204,18 @@ AppUtils.validatePageNumberAndSize(page, size);
 		}
 
 		return false; // Employee is not assigned to the project
+	}
+
+	@Override
+	public ApiResponse editProjectById(int projectId, @Valid ProjectDTO projectDTO, UserPrincipal currentUser) {
+		ProjectEntity projectEntity = projectRepository.findById(projectId)
+				.orElseThrow(() -> new ResourceNotFoundException("Project", "ID", projectId));
+		
+			projectEntity.setName(projectDTO.getName());
+			projectEntity.setDescription(projectDTO.getDescription());
+			projectRepository.save(projectEntity);
+			return new ApiResponse(Boolean.TRUE, "You successfully updated project");
+
 	}
 
 

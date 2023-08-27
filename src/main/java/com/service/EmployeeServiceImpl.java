@@ -16,6 +16,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -33,7 +34,11 @@ import com.entity.RoleName;
 import com.entity.TicketEntity;
 import com.exception.AppException;
 import com.exception.ResourceNotFoundException;
+import com.exception.UnAuthorizedException;
+import com.security.UserPrincipal;
 import com.utils.AppUtils;
+
+import javassist.expr.NewArray;
 
 @Service
 @Transactional
@@ -50,6 +55,7 @@ public class EmployeeServiceImpl implements EmployeeService {
 	
 	@Autowired
 	private ModelMapper modelMapper;
+	
 	
 	public EmployeeEntity convertEmployeeToEntity( EmployeeDTO employeeDTO ) {
 		return modelMapper.map(employeeDTO, EmployeeEntity.class);
@@ -143,26 +149,52 @@ List<EmployeeEntity> employeeEntities = employeeRepository.searchEmployees(searc
 	}
 
 	@Override
-	public ApiResponse deleteEmployeeById(int employeeId) {
+	public ApiResponse deleteEmployeeById(int employeeId, UserPrincipal currentUser) {
 		 EmployeeEntity  employeeEntity = employeeRepository.findById(employeeId).orElseThrow(() -> new ResourceNotFoundException("EMPLOYEE","ID",employeeId));
- 
+		 
+		 if ( employeeEntity.getEmployeeId() != currentUser.getEmployeeId() && !currentUser.getAuthorities().contains(new SimpleGrantedAuthority(RoleName.ROLE_ADMIN.toString()))) {
+			 ApiResponse apiResponse = new ApiResponse(Boolean.FALSE, "You are not authorized to delete this account");
+			 throw new UnAuthorizedException(apiResponse);
+		 }
+		 for (TicketEntity ticket : employeeEntity.getTickets()) {
+	            ticket.getAssignedEmployees().remove(employeeEntity);
+	        }
+		 
+		 for (ProjectEntity project : employeeEntity.getProjectEntities()) {
+	            project.getEmployees().remove(employeeEntity);
+	        }
+
+	        // Clear the employee's projects set to prevent cascading changes
+		 employeeEntity.getProjectEntities().clear();
+		 employeeEntity.getTickets().clear(); 
+
+		 
 		employeeRepository.deleteById(employeeId);
-		return new ApiResponse(Boolean.TRUE, "You successfully deleted employee");
+		return new ApiResponse(Boolean.TRUE, "You successfully deleted this acccount");
 	}
 
 
+
+
 	@Override
-	public ApiResponse updateEmployeeById(EmployeeDTO employeeDTO, int employeeId)  {
+	public EmployeeDTO updateEmployeeById(EmployeeDTO employeeDTO, int employeeId, UserPrincipal currentUser) {
 		 EmployeeEntity  employeeEntity = employeeRepository.findById(employeeId).orElseThrow(() -> new ResourceNotFoundException("EMPLOYEE","ID",employeeId));
- 
-		EmployeeEntity employeeEntity1 =new EmployeeEntity();
-		
-		BeanUtils.copyProperties(employeeDTO, employeeEntity1);
-		employeeEntity1.setEmployeeId(employeeId);
-		employeeRepository.save(employeeEntity1);
-		return new ApiResponse(Boolean.TRUE, "You successfully updated employee");
-		
-		
+		 if ( employeeEntity.getEmployeeId() == currentUser.getEmployeeId() || currentUser.getAuthorities().contains(new SimpleGrantedAuthority(RoleName.ROLE_ADMIN.toString()))) {
+			employeeEntity.setEmployeeName(employeeDTO.getEmployeeName());
+			employeeEntity.setEmailId(employeeDTO.getEmailId());
+			employeeEntity.setPassword(passwordEncoder.encode(employeeDTO.getPassword()) );
+			employeeEntity.setSalary(employeeDTO.getSalary());
+//			 BeanUtils.copyProperties(employeeDTO, employeeEntity);
+			employeeRepository.save(employeeEntity);
+			 EmployeeDTO responseEmployeeDTO = convertEmployeeToDTO(employeeEntity);
+				Set<TicketDTO> ticketDTOs = employeeEntity.getTickets().stream()
+						.map(ticketEntity -> convertTicketToDTO(ticketEntity))
+						.collect(Collectors.toSet());
+				responseEmployeeDTO.setTickets(ticketDTOs);
+				return responseEmployeeDTO;
+		 };
+		 ApiResponse apiResponse = new ApiResponse(Boolean.FALSE, "You are not authorized to update this account");
+		 throw new UnAuthorizedException(apiResponse);
 	}
 
 

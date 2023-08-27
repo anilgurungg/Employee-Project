@@ -2,10 +2,13 @@ package com.service;
 
 import java.util.List;
 
+import javax.validation.Valid;
+
 import com.dto.ApiResponse;
 import com.dto.EmployeeDTO;
 import com.dto.PagedResponseDTO;
 import com.dto.ResponseDTO;
+import com.security.UserPrincipal;
 
 public interface EmployeeService {
 
@@ -15,10 +18,11 @@ public interface EmployeeService {
 
 	EmployeeDTO getEmployeeById(int employeeId);
 
-	ApiResponse deleteEmployeeById(int employeeId);
+	ApiResponse deleteEmployeeById(int employeeId, UserPrincipal currentUser);
 
-	ApiResponse updateEmployeeById(EmployeeDTO employeeDTO, int employeeId)  ;
 
 	List<EmployeeDTO> searchEmployees(String searchTerm);
+
+	EmployeeDTO updateEmployeeById(EmployeeDTO employeeDTO, int employeeId, UserPrincipal currentUser);
 
 }

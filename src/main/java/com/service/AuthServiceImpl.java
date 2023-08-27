@@ -1,5 +1,6 @@
 package com.service;
 
+import java.io.Console;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
@@ -10,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -69,9 +71,9 @@ public class AuthServiceImpl implements AuthService {
 		int salary = signUpRequest.getSalary();
 
 		EmployeeEntity employee = new EmployeeEntity(employeeName,emailId,password, salary);
-
+		System.out.println(employee);
 		List<Role> roles = new ArrayList<>();
-
+		
 		if (employeeRepository.count() == 0) {
 			roles.add(roleRepository.findByName(RoleName.ROLE_USER)
 					.orElseThrow(() -> new AppException(EMPLOYEE_ROLE_NOT_SET)));
@@ -83,25 +85,34 @@ public class AuthServiceImpl implements AuthService {
 		}
 
 		employee.setRoles(roles);
+	
+		
+			System.out.println(employee);
+			EmployeeEntity result = employeeRepository.saveAndFlush(employee) ;
+			System.out.println(result);
+			URI location = ServletUriComponentsBuilder.fromCurrentContextPath().path("/api/users/{userId}")
+					.buildAndExpand(result.getEmployeeId()).toUri();
 
-		EmployeeEntity result = employeeRepository.save(employee);
-
-		URI location = ServletUriComponentsBuilder.fromCurrentContextPath().path("/api/users/{userId}")
-				.buildAndExpand(result.getEmployeeId()).toUri();
 		return ResponseEntity.created(location).body(new ApiResponse(Boolean.TRUE, "User registered successfully"));
 	}
 
 
 
 	@Override
-	public ResponseEntity<JwtAuthenticationResponseDTO> loginEmployee(@Valid LoginDTO loginDTO) {
-		Authentication authentication = authenticationManager.authenticate(
-				new UsernamePasswordAuthenticationToken(loginDTO.getEmailId(), loginDTO.getPassword()));
+	public ResponseEntity<?> loginEmployee(@Valid LoginDTO loginDTO) {
+		try {
+			Authentication authentication = authenticationManager.authenticate(
+					new UsernamePasswordAuthenticationToken(loginDTO.getEmailId(), loginDTO.getPassword()));
 
-		SecurityContextHolder.getContext().setAuthentication(authentication);
+			SecurityContextHolder.getContext().setAuthentication(authentication);
 
-		String jwt = jwtTokenProvider.generateToken(authentication);
-		return ResponseEntity.ok(new JwtAuthenticationResponseDTO(jwt));
+			String jwt = jwtTokenProvider.generateToken(authentication);
+			return ResponseEntity.ok(new JwtAuthenticationResponseDTO(jwt));
+		} catch (BadCredentialsException ex) {
+			return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+		            .body(new ApiResponse(Boolean.FALSE, "Invalid email or password"));
+		}
+		
 	}
 
 	

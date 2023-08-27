@@ -9,7 +9,7 @@ import org.springframework.stereotype.Repository;
 
 import com.entity.TicketEntity;
 
-@Repository
+//@Repository
 public interface TicketRepository  extends JpaRepository<TicketEntity, Integer> {
 
 	Page<TicketEntity> findByProjectProjectId(Integer projectId, Pageable pageable);
